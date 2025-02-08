@@ -1,21 +1,13 @@
 "use client";
 import { useState } from "react";
-
-function gcd(a, b) {
-  return b === 0 ? a : gcd(b, a % b);
-}
-
-function simplifyFraction(numerator, denominator) {
-  const divisor = gcd(numerator, denominator);
-  return [numerator / divisor, denominator / divisor];
-}
+import * as math from "mathjs";
 
 export default function Game24() {
-  const defaultNumbers = [10, 8, 7, 5];
+  const defaultNumbers = [3, 3, 7, 7].map(num => math.fraction(num));
   const [numbers, setNumbers] = useState([...defaultNumbers]);
   const [selected, setSelected] = useState({ first: null, operator: null });
   const [history, setHistory] = useState([]);
-  const [background, setBackground] = useState("#D8CFC4");
+  const [background, setBackground] = useState("#d8cfc4");
   const [overlay, setOverlay] = useState(false);
 
   const handleNumberClick = (index) => {
@@ -43,31 +35,48 @@ export default function Game24() {
   const performOperation = (index1, index2, operation) => {
     let newNumbers = [...numbers];
     let result;
-    let numerator, denominator;
 
     switch (operation) {
       case "+":
-        result = newNumbers[index1] + newNumbers[index2];
+        result = math.add(newNumbers[index1], newNumbers[index2]);
         break;
       case "−":
-        result = newNumbers[index1] - newNumbers[index2];
+        result = math.subtract(newNumbers[index1], newNumbers[index2]);
         break;
       case "×":
-        result = newNumbers[index1] * newNumbers[index2];
+        result = math.multiply(newNumbers[index1], newNumbers[index2]);
         break;
       case "÷":
-        if (newNumbers[index2] !== 0) {
-          numerator = newNumbers[index1];
-          denominator = newNumbers[index2];
-          [numerator, denominator] = simplifyFraction(numerator, denominator);
-          result = `${numerator}/${denominator}`;
-        } else {
+        // 0 DIVISION
+        if (math.equal(newNumbers[index2], math.fraction(0))) {
+          const alertBox = document.createElement('div');
+          alertBox.textContent = "0 division";
+          alertBox.style.position = 'fixed';
+          alertBox.style.top = '50%';
+          alertBox.style.left = '50%';
+          alertBox.style.transform = 'translate(-50%, -50%)';
+          alertBox.style.background = 'rgba(0, 0, 0, 0.75)';
+          alertBox.style.color = 'white';
+          alertBox.style.padding = '20px';
+          alertBox.style.borderRadius = '10px';
+          alertBox.style.fontSize = '30px';
+          alertBox.style.fontFamily = "'Titan One', sans-serif";
+          alertBox.style.fontWeight = 'bold';
+          alertBox.style.zIndex = '1000';
+          document.body.appendChild(alertBox);
+          setBackground("#c09d9b");
+          setTimeout(() => {
+            document.body.removeChild(alertBox);
+            setBackground("#d8cfc4");
+          }, 750);
           return;
         }
+
+        result = math.divide(newNumbers[index1], newNumbers[index2]);
         break;
       default:
         return;
-    }
+      }
 
     setHistory([...history, [...numbers]]);
     newNumbers[index1] = result;
@@ -75,21 +84,19 @@ export default function Game24() {
     setNumbers(newNumbers);
     setSelected({ first: null, operator: null });
 
-    // RESULT CHECKING
+    // result check
     const remainingNumbers = newNumbers.filter((num) => num !== null);
     if (remainingNumbers.length === 1) {
       let finalValue = remainingNumbers[0];
-      if (typeof finalValue === "string" && finalValue.includes("/")) {
-        const [num, den] = finalValue.split("/").map(Number);
-        if (num % den === 0) finalValue = num / den;
-      }
-      setBackground(finalValue === 24 ? "#678f74" : "#c09d9b");
+      const value = finalValue.s * (finalValue.n / finalValue.d);
+      /* FINAL ANSWER */
+      setBackground(value === 24n ? "#678f74" : "#c09d9b");
       setTimeout(() => {
         setOverlay(true);
-        if (finalValue !== 24) resetGame();
+        if (value !== 24n) resetGame();
         setTimeout(() => {
         setOverlay(false);
-        setBackground("#D8CFC4");
+        setBackground("#d8cfc4");
         }, 500);
       }, 1000);
     }
@@ -114,20 +121,30 @@ export default function Game24() {
       {/* NUMS */}
       <div className="relative grid grid-cols-2 gap-12 p-12">
         {numbers.map((num, index) => (
-          <div
-            key={index}
-            className={`w-52 h-52 flex items-center justify-center text-7xl font-bold tracking-wide 
-              ${selected.first === index ? "bg-[#889f8b]" : num !== null ? "bg-[#8292A2]" : "bg-gray-300"}
-              ${num === null ? "text-transparent" : "text-white"} 
-              border-8 border-white rounded-lg shadow-xl 
-              transition-all duration-300 transform 
-              hover:scale-125 hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)] hover:-translate-y-2 cursor-pointer`}
+          <div key={index} className={`w-52 h-52 flex items-center justify-center text-7xl font-bold tracking-wide 
+            ${selected.first === index ? "bg-[#889f8b]" : num !== null ? "bg-[#8292A2]" : "bg-gray-300"}
+            ${num === null ? "text-transparent" : "text-white"} 
+            border-8 border-white rounded-lg shadow-xl 
+            transition-all duration-300 transform 
+            hover:scale-125 hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)] hover:-translate-y-2 cursor-pointer`}
             onClick={() => (num !== null ? handleNumberClick(index) : null)}
-            style={{ fontFamily: "'Arial Black', sans-serif" }}
-          >
-            {num !== null ? num : ""}
+            style={{ fontFamily: "'Arial Black', sans-serif"}}>
+
+            {num ? (
+              math.equal(num.d, 1n) ? 
+              (<span>{math.number(num)}</span>) : 
+              (<div className="flex flex-row items-center">
+                  {num.s === -1n && <span className="text-6xl font-bold mr-1">-</span>}
+                  <div className="flex flex-col items-center">
+                    <span>{num.n}</span>
+                    <div className="w-full border-t-4 border-white my-1"></div>
+                    <span>{num.d}</span>
+                  </div>
+                </div>)
+            ) : ""}
           </div>
         ))}
+
         <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32
         flex items-center justify-center text-4xl bg-gray-300 text-gray-800 
         border-5 border-white rounded-full shadow-md"
@@ -157,7 +174,8 @@ export default function Game24() {
           ↺
         </div>
       </div>
-
+      
+      {/* OVERLAY */}
       {overlay && (
         <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center backdrop-blur-xl bg-white/30 transition-opacity duration-500 opacity-100"></div>
       )}
