@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import * as math from "mathjs";
 import { useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Game24() {
   const searchParams = useSearchParams();
@@ -19,6 +20,9 @@ export default function Game24() {
   const [isJudging, setIsJudging] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const [hintPopup, setHintPopup] = useState(null);
+  const [solutionPopup, setSolutionPopup] = useState(null);
+  const [hoveredButton, setHoveredButton] = useState(null);
 
   // Function to fetch new numbers from backend
   const fetchNumbers = async () => {
@@ -48,6 +52,7 @@ export default function Game24() {
     }
   }, [timeLeft, isCompetition, hasStarted]);
 
+  // Competition
   const handleStartCompetition = () => {
     let count = 3;
     setCountdown(3);
@@ -65,6 +70,47 @@ export default function Game24() {
     }, 1000);
   };
 
+  // Practice
+  const handleHint = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:5000/get_hint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ numbers: initialNumbers.map(num => math.number(num)) })
+      });
+      const data = await response.json();
+      if (data.hint) {
+        setHintPopup(data.hint);  // Show hint
+      } else {
+        setHintPopup("No hint available!");
+      }
+    } catch (error) {
+      console.error("Error fetching hint:", error);
+      setHintPopup("Error fetching hint!");
+    }
+  };
+  
+  const handleSolution = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:5000/get_solution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ numbers: initialNumbers.map(num => math.number(num)) })
+      });
+      const data = await response.json();
+      if (data.solution) {
+        setSolutionPopup(data.solution);
+      } else {
+        setSolutionPopup("No solution available!");
+      }
+    } catch (error) {
+      console.error("Error fetching solution:", error);
+      setSolutionPopup("Error fetching solution!");
+    }
+  };
+  
+
+  //  Calculation
   const handleNumberClick = (index) => {
     if (selected.first === index) {
       setSelected({ first: null, operator: null });
@@ -150,11 +196,18 @@ export default function Game24() {
       setTimeout(() => {
         setOverlay(true);
         if (value === 24n) { // WIN
-          if (isCompetition) setScore(score + 1);
+          if (isCompetition) {
+            setScore(score + 1);
+          } else {
+            setHintPopup(null);
+            setSolutionPopup(null);
+          }
           fetchNumbers(); 
           setHistory([]);
         } else {             // LOSE
-          setHistory([]); 
+          setHistory([]);
+          if (!isCompetition) {
+          }
           setNumbers([...initialNumbers]); // Reset to the original
         }
         setTimeout(() => {
@@ -187,6 +240,7 @@ export default function Game24() {
         }
       `}
       </style>
+
 
       {/* NUMS */}
       <div className="relative grid grid-cols-2 gap-12 p-12">
@@ -223,6 +277,7 @@ export default function Game24() {
         </div>
       </div>
       
+
       {/* OPERATOR + UNDO */}
       <div className="relative grid grid-cols-5 gap-10 p-6">
         {["+", "−", "×", "÷"].map((op) => (
@@ -230,7 +285,7 @@ export default function Game24() {
             key={op}
             className={`w-20 h-20 flex items-center justify-center text-5xl font-bold tracking-wide 
               ${selected.operator === op ? "bg-[#889f8b]" : "bg-[#8292A2]"} text-white 
-              border-8 border-white rounded-lg shadow-xl transition-all duration-300 transform hover:scale-125 
+              border-4 border-white rounded-lg shadow-xl transition-all duration-300 transform hover:scale-125 
               hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)] hover:-translate-y-2 cursor-pointer`}
             onClick={() => handleOperatorClick(op)}
           >
@@ -238,7 +293,7 @@ export default function Game24() {
           </div>
         ))}
         <div className={`w-20 h-20 flex items-center justify-center text-5xl font-bold tracking-wide bg-[#a08887] 
-        text-white border-8 border-white rounded-lg shadow-xl transition-all duration-300 
+        text-white border-4 border-white rounded-lg shadow-xl transition-all duration-300 
         transform hover:scale-125 hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)] 
         hover:-translate-y-2 cursor-pointer`} onClick={handleUndo}>
           ↺
@@ -248,6 +303,8 @@ export default function Game24() {
                          style={{ fontFamily: "'Comic Sans MS', cursive, sans-serif"}}>{timeLeft}</div>}
       {isCompetition && <div className="absolute top-5 right-5 text-4xl font-bold"
                          style={{ fontFamily: "'Comic Sans MS', cursive, sans-serif"}}>Score: {score}</div>}
+
+
       {/* OVERLAY */}
       {overlay && (
         <div className={`absolute top-0 left-0 w-full h-full flex items-center justify-center backdrop-blur-xl
@@ -260,6 +317,89 @@ export default function Game24() {
               onClick={handleStartCompetition}>Ready</button>)}
         </div>
       )}
+
+
+      {/* HINT & SOLUTION */}
+      {!isCompetition && (
+        <div className="absolute top-20 right-10 flex flex-col gap-20">
+          {/* HINT BUTTON */}
+          <button
+            className={`w-20 h-20 flex items-center justify-center font-bold bg-[#8292A2] text-white
+            border-4 border-white rounded-lg shadow-xl transition-all duration-300 transform hover:scale-125 
+                hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)] hover:-translate-y-2 cursor-pointer`}
+            onMouseEnter={() => setHoveredButton("Hint")}
+            onMouseLeave={() => setHoveredButton(null)}
+            onClick={handleHint}
+          >
+            <span className={hoveredButton === "Hint" ? "text-[12pt]" : "text-[28pt]"}>
+              {hoveredButton === "Hint" ? "Hint" : "💡"}
+            </span>
+          </button>
+
+          {/* SOLUTION BUTTON */}
+          <button
+            className={`w-20 h-20 flex items-center justify-center font-bold bg-[#8292A2] text-white
+            border-4 border-white rounded-lg shadow-xl transition-all duration-300 transform hover:scale-125 
+                hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)] hover:-translate-y-2 cursor-pointer`}
+            onMouseEnter={() => setHoveredButton("Solution")}
+            onMouseLeave={() => setHoveredButton(null)}
+            onClick={handleSolution}
+          >
+            <span className={hoveredButton === "Solution" ? "text-[12pt]" : "text-[28pt]"}>
+              {hoveredButton === "Solution" ? "Solution" : "💯"}
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* PRACTICE POP-UP CONTAINER */}
+      <div className="absolute top-12 right-36 flex flex-col items-end gap-4">
+        {/* POP-UP FOR HINT */}
+        <div className="w-64 h-36 flex items-center justify-center">
+          <AnimatePresence>
+            {hintPopup && (
+              <motion.div
+              initial={{ opacity: 0, scale: 0.6, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.6, y: 20 }}
+              transition={{ duration: 0.2, type: "spring", ease: "easeInOut" }}
+              className={`bg-[#a08887] bg-opacity-90 text-black text-2xl p-4 rounded-lg
+                              shadow-lg border-4 w-60 text-center min-h-[150px] flex flex-col justify-between`}
+                  style={{ fontFamily: "'Comic Sans MS', cursive, sans-serif" }}>
+                <span className="block font-bold"> One Hint:<br /></span>
+                <p>{hintPopup}</p>
+                <button className="mt-2 px-2 py-2 bg-gray-800 text-white rounded-lg text-xl"
+                        onClick={() => setHintPopup(null)}>
+                  Close
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        {/* POP-UP FOR SOLUTION */}
+        <div className="w-64 h-36 flex items-center justify-center">
+          <AnimatePresence>
+            {solutionPopup && (
+              <motion.div
+              initial={{ opacity: 0, scale: 0.6, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.6, y: 20 }}
+              transition={{ duration: 0.2, type: "spring", ease: "easeInOut" }}
+              className={`bg-[#a08887] bg-opacity-90 text-black text-2xl p-4 rounded-lg
+                              shadow-lg border-4 w-60 text-center min-h-[150px] flex flex-col justify-between`}
+                  style={{ fontFamily: "'Comic Sans MS', cursive, sans-serif" }}>
+                <span className="block font-bold"> One Solution:<br /></span>
+                <p>{solutionPopup}</p>
+                <button className="mt-2 px-2 py-2 bg-gray-800 text-white rounded-lg text-xl"
+                        onClick={() => setSolutionPopup(null)}>
+                  Close
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
 
       {/* GAME OVER */}
       {gameOver && (

@@ -24,7 +24,8 @@ export default function ModeSelection() {
             Competition Mode
           </button>
           {hoveredMode === "competition" && (
-            <div className="absolute top-[-180px] left-1/2 transform -translate-x-1/2 w-80 p-4 text-2xl bg-gray-800 bg-opacity-60 backdrop-blur-md text-white text-center rounded-md shadow-lg"
+            <div className="absolute top-[-180px] left-1/2 transform -translate-x-1/2 w-80 p-4 text-2xl bg-gray-800
+            bg-opacity-60 backdrop-blur-md text-white text-center rounded-md shadow-lg"
             style={{ fontFamily: "'Comic Sans MS', cursive, sans-serif" }}>
               ⏳ Timer<br />
               🥇 Get more points<br />
@@ -47,7 +48,8 @@ export default function ModeSelection() {
             Practice Mode
           </button>
           {hoveredMode === "practice" && (
-            <div className="absolute top-[-180px] left-1/2 transform -translate-x-1/2 w-80 p-4 text-2xl bg-gray-800 bg-opacity-60 backdrop-blur-md text-white text-center rounded-md shadow-lg"
+            <div className="absolute top-[-180px] left-1/2 transform -translate-x-1/2 w-80 p-4 text-2xl bg-gray-800
+            bg-opacity-60 backdrop-blur-md text-white text-center rounded-md shadow-lg"
             style={{ fontFamily: "'Comic Sans MS', cursive, sans-serif" }}>
               ⏳ No Timer<br />
               📚 Practice<br />
