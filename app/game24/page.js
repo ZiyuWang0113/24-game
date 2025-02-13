@@ -1,12 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
 import * as math from "mathjs";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Game24() {
   const searchParams = useSearchParams();
   const isCompetition = searchParams.get("mode") === "competition";
+  const router = useRouter();
 
   const [numbers, setNumbers] = useState([]);
   const [initialNumbers, setInitialNumbers] = useState([]); // Store original set
@@ -241,6 +242,17 @@ export default function Game24() {
       `}
       </style>
 
+      {/* Back Button */}
+      {(!isCompetition || !hasStarted) && (
+        <button
+          className={`absolute top-10 left-10 px-6 py-3 bg-[#a08887] text-white text-3xl font-bold rounded-lg shadow-xl
+          transition-transform duration-300 transform hover:scale-110 hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)]`}
+          style={{ fontFamily: "'Comic Sans MS', cursive, sans-serif", zIndex: 50 }}
+          onClick={() => router.back()}
+        >
+          ← Back
+        </button>
+      )}
 
       {/* NUMS */}
       <div className="relative grid grid-cols-2 gap-12 p-12">
@@ -309,12 +321,14 @@ export default function Game24() {
       {overlay && (
         <div className={`absolute top-0 left-0 w-full h-full flex items-center justify-center backdrop-blur-xl
           bg-white/20 transition-opacity duration-500 opacity-100`}
-          style={{ fontFamily: "'Comic Sans MS', cursive, sans-serif"}}>
-          {countdown !== null ? (<span className="text-8xl font-bold">{countdown}</span>
+          style={{ fontFamily: "'Comic Sans MS', cursive, sans-serif" }}>
+          {countdown !== null ? (
+            <span className="text-8xl font-bold">{countdown}</span> // Countdown enlarged
           ) : (!isJudging && !gameOver &&
               <button className={`p-8 bg-[#a08887] text-white text-6xl rounded-lg
               transition-transform duration-300 transform hover:scale-110 hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)]`}
-              onClick={handleStartCompetition}>Ready</button>)}
+              onClick={handleStartCompetition}>Ready?</button>)
+          }
         </div>
       )}
 
