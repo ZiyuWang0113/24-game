@@ -1,8 +1,10 @@
 "use client";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function HomePage() {
   const router = useRouter();
+  const [hoveredButton, setHoveredButton] = useState(null);
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen w-full pt-16 relative"
@@ -18,12 +20,16 @@ export default function HomePage() {
       
       {/* How To Play Button */}
       <button
-        className="absolute top-10 left-10 px-6 py-3 bg-[#a08887] text-white text-3xl font-bold rounded-lg shadow-xl
-        transition-transform duration-300 transform hover:scale-110 hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)]"
+        className={`absolute top-10 left-10 px-6 py-3 bg-[#a08887] items-center justify-center text-white text-3xl font-bold rounded-lg shadow-xl
+        transition-transform duration-300 transform hover:scale-110 hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)]`}
         style={{ fontFamily: "'Comic Sans MS', cursive, sans-serif" }}
+        onMouseEnter={() => setHoveredButton("Guide")}
+        onMouseLeave={() => setHoveredButton(null)}
         onClick={() => router.push("/game-guide")}
       >
-        ❓
+        <span className={hoveredButton === "Guide" ? "text-[16pt]" : "text-[30pt]"}>
+          {hoveredButton === "Guide" ? "Guide" : "❓"}
+        </span>
       </button>
 
       {/* Wikipedia Info Box */}

@@ -14,7 +14,7 @@ export default function ModeSelection() {
         className="absolute top-10 left-10 px-6 py-3 bg-[#a08887] text-white text-3xl font-bold rounded-lg shadow-xl
         transition-transform duration-300 transform hover:scale-110 hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)]"
         style={{ fontFamily: "'Comic Sans MS', cursive, sans-serif" }}
-        onClick={() => router.back()}
+        onClick={() => router.push("/")}
       >
         ← Back
       </button>
