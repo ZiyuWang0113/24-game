@@ -16,42 +16,34 @@ export default function GameGuide() {
   const [overlay, setOverlay] = useState([]);
   const [hoveredButton, setHoveredButton] = useState(null);
 
-  const [stepLock, setStepLock] = useState(false);
+  const [nextLock, setNextLock] = useState(false);
   const [circleColor, setCircleColor] = useState("gray-300");                   // Default 24 circle color
   const [numberHighlight, setNumberHighlight] = useState(null);                 // Track first number selection
   const [operatorHighlight, setOperatorHighlight] = useState(null);             // Track operator selection
   const [secondNumberHighlight, setSecondNumberHighlight] = useState(null);     // Track second number selection
 
+  const [hasFailed, setHasFailed] = useState(false);
+  const [showCursor, setShowCursor] = useState(false); // Whether to show fake cursor
+  const [cursorPosition, setCursorPosition] = useState({ x: "50%", y: "50%" }); // Initial position
+
 
   const steps = [
-    "Welcome! This is a tutorial on how to play.",
+    "Welcome! This is a guide on how to play.",
     "There will be 4 numbers. The goal is to use +, −, ×, ÷ to make 24.",
     "Select one number, one operator, and another number in a row to perform one calculation.",
-    "Let's try to play around. Now click \'10\', \'−\', \'4\', to get a 6.",
+    "Let's try to play around. Now click 10, −, 4, to get a 6.",
     "The result replaces the selected numbers. Repeat until only 24 remains!",
-    "Now click the \'UNDO\' button to undo the previous calculation.",
-    "Now click \'6\', then click \'−\', then click \'4\', to get 2.",
-    "Now click \'10\', then click \'−\', then click \'2\', to get 8.",
-    "Now click \'8\', then click \'×\', then click \'3\', to get 24.",
+    "Now click the UNDO button to undo the previous calculation.",
+    "Now click 6, then click −, then click 4, to get 2.",
+    "Now click 10, then click −, then click 2, to get 8.",
+    "Now click 8, then click ×, then click 3, to get 24.",
     "You got it! Turning green means you are correct. It's time to play!"
   ];
   
   // next lock
   const handleNextStep = () => {
-    if (!stepLock) {  // Only allow clicking if animations are done
+    if (!nextLock) {  // Only allow clicking if animations are done
       setStep(step + 1);
-    }
-  };
-
-  const fetchNumbers = async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:5000/get_numbers");
-      const data = await response.json();
-      setNumbers(data.map(num => math.fraction(num)));
-      setInitialNumbers(data.map(num => math.fraction(num)));
-      setHistory([]); // Clear history when new numbers are fetched
-    } catch (error) {
-      console.error("Error fetching numbers:", error);
     }
   };
 
@@ -64,7 +56,7 @@ export default function GameGuide() {
   // step 1
   useEffect(() => {
     if (step === 1) {
-      setStepLock(true);
+      setNextLock(true);
 
       setTimeout(() => {
         setNumberHighlight("all");
@@ -76,7 +68,7 @@ export default function GameGuide() {
   
             setTimeout(() => {
               setCircleColor("#c0c0c0");
-              setStepLock(false);
+              setNextLock(false);
             }, 1000);
   
         }, 1000);
@@ -88,7 +80,7 @@ export default function GameGuide() {
   // step 2
   useEffect(() => {
     if (step === 2) {
-      setStepLock(true);
+      setNextLock(true);
       setTimeout(() => {
         setNumberHighlight(0);
   
@@ -102,7 +94,7 @@ export default function GameGuide() {
               setNumberHighlight(null);
               setOperatorHighlight(null);
               setSecondNumberHighlight(null);
-              setStepLock(false);
+              setNextLock(false);
             }, 2000);
   
           }, 1000);
@@ -113,9 +105,58 @@ export default function GameGuide() {
     }
   }, [step]);
 
+  // step 3
+  useEffect(() => {
+    if (step === 3) {
+      setTimeout(() => setShowCursor(true), 1000);
+      setNextLock(false);
+      setCursorPosition({ x: "50%", y: "50%" });
+
+      // Move cursor to "10" and highlight it
+      setTimeout(() => {
+        setCursorPosition({ x: "56%", y: "50%" });
+        setNumberHighlight(3);  // ✅ Highlight "10"
+      }, 2000);
+
+      // Move cursor to "-" and highlight it
+      setTimeout(() => {
+        setCursorPosition({ x: "44%", y: "72%" });
+        setOperatorHighlight("−");  // ✅ Highlight "-"
+        setNumberHighlight(null);  // ❌ Remove highlight from "10"
+      }, 4000);
+
+      // Move cursor to "4" and highlight it
+      setTimeout(() => {
+        setCursorPosition({ x: "56%", y: "25%" });
+        setSecondNumberHighlight(1);  // ✅ Highlight "4"
+        setOperatorHighlight(null);  // ❌ Remove highlight from "-"
+      }, 6000);
+    
+      // Cursor Gone, remove all highlights
+      setTimeout(() => {
+        setShowCursor(false);
+        setNumberHighlight(null);
+        setOperatorHighlight(null);
+        setSecondNumberHighlight(null);
+      }, 8000);
+    }
+  }, [step]);
+
+
+  // step 5
+  useEffect(() => {
+    if (step === 5) {
+      setTimeout(() => {
+        setOperatorHighlight("↺");
+        setTimeout(() => setOperatorHighlight(null), 2000);
+      }, 1000);
+    }
+  }, [step]);
+
+  
   const handleNumberClick = (index) => {
-    if (stepLock) return;     // Prevent clicking only if locked
-    console.log(`Clicked number: ${index}, Current selection:`, selected); // Debugging
+    if (nextLock) return;     // Prevent clicking only if locked
+    // console.log(`Clicked number: ${index}, Current selection:`, selected); // Debugging
   
     if (selected.first === index) {
       setSelected({ first: null, operator: null });
@@ -129,7 +170,7 @@ export default function GameGuide() {
   };
 
   const handleOperatorClick = (op) => {
-    if (stepLock) return;     // Prevent clicking only if locked
+    if (nextLock) return;     // Prevent clicking only if locked
     if (selected.operator === op) {
       setSelected({ ...selected, operator: null });
       return;
@@ -202,7 +243,7 @@ export default function GameGuide() {
         setOverlay(true);
         if (value === 24n) { // WIN
           setHistory([]);
-          setNumbers(initialNumbers.map(num => math.fraction(num)));
+          setStep(9);
         } else {             // LOSE
           setHistory([]);
           setNumbers(initialNumbers.map(num => math.fraction(num)));
@@ -262,8 +303,7 @@ export default function GameGuide() {
             ${selected.first === index ? "bg-[#889f8b]" : num !== null ? "bg-[#8292A2]" : "bg-gray-300"}
             ${num === null ? "text-transparent" : "text-white"} 
             border-8 border-white rounded-lg shadow-xl 
-            transition-all duration-300 transform 
-            hover:scale-125 hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)] hover:-translate-y-2 cursor-pointer`}
+            transition-all duration-300 transform hover:scale-125 hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)] hover:-translate-y-2 cursor-pointer`}
             onClick={() => (num !== null ? handleNumberClick(index) : null)}
             style={{
               fontFamily: "'Comic Sans MS', cursive, sans-serif",
@@ -298,26 +338,20 @@ export default function GameGuide() {
 
       {/* OPERATOR + UNDO */}
       <div className="relative grid grid-cols-5 gap-10 p-6">
-        {["+", "−", "×", "÷"].map((op) => (
+        {["+", "−", "×", "÷", "↺"].map((op) => (
           <div
             key={op}
             className={`w-20 h-20 flex items-center justify-center text-5xl font-bold tracking-wide 
               ${selected.operator === op ? "bg-[#889f8b]" : "bg-[#8292A2]"} text-white 
-              border-4 border-white rounded-lg shadow-xl transition-all duration-300 transform hover:scale-125 
+              border-4 border-white rounded-lg shadow-xl transition-all duration-300 transform
               hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)] hover:-translate-y-2 cursor-pointer`}
-            onClick={() => handleOperatorClick(op)}
-            style = {{backgroundColor: selected.operator === op ? "#678f74" :
-                                       operatorHighlight === op ? "#678f74" : "#8292A2"}}
+            onClick={() => (op === "↺" ? handleUndo() : handleOperatorClick(op))}
+            style={{ backgroundColor: selected.operator === op ? "#678f74" :
+                    operatorHighlight === op ? "#ff99cc" : "#8292A2" }}
           >
-            {op}
+            {op === "↺" ? "↺" : op}
           </div>
         ))}
-        <div className={`w-20 h-20 flex items-center justify-center text-5xl font-bold tracking-wide bg-[#a08887] 
-        text-white border-4 border-white rounded-lg shadow-xl transition-all duration-300 
-        transform hover:scale-125 hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)] 
-        hover:-translate-y-2 cursor-pointer`} onClick={handleUndo}>
-          ↺
-        </div>
       </div>
       
       {/* NOTE Button */}
@@ -339,7 +373,7 @@ export default function GameGuide() {
             style={{ fontFamily: "'Comic Sans MS', cursive, sans-serif" }}>
               🖱️ Click again to unselect.<br />
               ➗ Division by 0 is illegal.<br />
-              🧮 fraction is legal.<br />
+              🧮 Fraction is legal.<br />
               💡 Try it!
             </div>
           )}
@@ -358,13 +392,41 @@ export default function GameGuide() {
         <button
           className={`mt-10 px-8 py-4 bg-[#a08887] text-white text-3xl font-bold rounded-lg shadow-xl
             transition-all duration-300 transform 
-            ${stepLock ? "opacity-50 cursor-not-allowed" : "hover:scale-125 hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)] hover:-translate-y-2 cursor-pointer"}`}
+            ${nextLock ? "opacity-50 cursor-not-allowed" : "hover:scale-125 hover:shadow-[0px_0px_30px_rgba(255,255,255,0.8)] hover:-translate-y-2 cursor-pointer"}`}
           style={{ fontFamily: "'Comic Sans MS', cursive, sans-serif" }}
           onClick={handleNextStep}
-          disabled={stepLock} // Prevent clicking
+          disabled={nextLock} // Prevent clicking
         >
           Next →
         </button>
+      )}
+
+      {/* Cursor */}
+      {showCursor && (
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            position: "absolute",
+            width: "40px",
+            height: "40px",
+            top: cursorPosition.y,
+            left: cursorPosition.x,
+            transition: "top 1s ease, left 1s ease", // Smooth movement
+            transform: "translate(-5px, -5px)", // Offset for realism
+            zIndex: 1000, // Ensure it stays on top
+          }}
+        >
+          {/* Cursor SVG - Black Pointer */}
+          <svg
+            width="100%"
+            height="100%"
+            viewBox="0 0 24 24"
+            fill="black"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M3 2L5 17L9 13L12 20L14 19L11 12L16 11L3 2Z" />
+          </svg>
+        </div>
       )}
 
       {/* Play Button */}
